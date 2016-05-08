@@ -47,7 +47,7 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/uart.h"
 #include "utils/uartstdio.h"
-
+#include "driverlib/rom.h"
 //*****************************************************************************
 //
 //! \addtogroup ssi_examples_list
@@ -131,6 +131,49 @@ InitConsole(void)
     //
     UARTStdioConfig(0, 115200, 16000000);
 }
+void
+UARTIntHandler(void)
+{
+    uint32_t ui32Status;
+
+    //
+    // Get the interrrupt status.
+    //
+    ui32Status = ROM_UARTIntStatus(UART0_BASE, true);
+
+    //
+    // Clear the asserted interrupts.
+    //
+    ROM_UARTIntClear(UART0_BASE, ui32Status);
+
+    //
+    // Loop while there are characters in the receive FIFO.
+    //
+    while(ROM_UARTCharsAvail(UART0_BASE))
+    {
+        //
+        // Read the next character from the UART and write it back to the UART.
+        //
+        ROM_UARTCharPutNonBlocking(UART0_BASE,
+                                   ROM_UARTCharGetNonBlocking(UART0_BASE));
+
+        //
+        // Blink the LED to show a character transfer is occuring.
+        //
+        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, GPIO_PIN_2);
+
+        //
+        // Delay for 1 millisecond.  Each SysCtlDelay is about 3 clocks.
+        //
+        SysCtlDelay(SysCtlClockGet() / (1000 * 3));
+
+        //
+        // Turn off the LED
+        //
+        GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0);
+
+    }
+}
 
 //*****************************************************************************
 //
@@ -201,9 +244,13 @@ main(void)
     //
     GPIOPinConfigure(GPIO_PA2_SSI0CLK);
     GPIOPinConfigure(GPIO_PA3_SSI0FSS);
-    GPIOPinConfigure(GPIO_PA4_SSI0XDAT0);//(GPIO_PA4_SSI0RX);
-    GPIOPinConfigure(GPIO_PA5_SSI0XDAT1);//(GPIO_PA5_SSI0TX);
-
+	#if defined(TARGET_IS_TM4C129_RA0)
+	GPIOPinConfigure(GPIO_PA4_SSI0XDAT0);
+	GPIOPinConfigure(GPIO_PA5_SSI0XDAT1);
+	#else
+    GPIOPinConfigure(GPIO_PA4_SSI0RX);//(GPIO_PA4_SSI0XDAT0);//(GPIO_PA4_SSI0RX);
+    GPIOPinConfigure(GPIO_PA5_SSI0TX);//(GPIO_PA5_SSI0XDAT1);//(GPIO_PA5_SSI0TX);
+	#endif
     //
     // Configure the GPIO settings for the SSI pins.  This function also gives
     // control of these pins to the SSI hardware.  Consult the data sheet to

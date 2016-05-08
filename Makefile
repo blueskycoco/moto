@@ -26,7 +26,7 @@
 # Defines the part type that this project uses.
 #
 PART=TM4C1294NCPDT
-
+#PART=TM4C123GH6PM
 #
 # The base directory for TivaWare.
 #
@@ -44,7 +44,9 @@ include ${ROOT}/makedefs
 IPATH=.
 IPATH+=./inc
 VPATH=./src
-
+#VPATH+=./src/tm4c123
+VPATH+=./src/tm4c129
+VPATH+=./src/lib
 #
 # The default rule, which causes the moto example to be built.
 #
@@ -67,24 +69,22 @@ ${COMPILER}:
 # Rules for building the moto example.
 #
 ${COMPILER}/moto.axf: ${COMPILER}/startup_${COMPILER}.o
-${COMPILER}/moto.axf: ${COMPILER}/softssi.o
-${COMPILER}/moto.axf: ${COMPILER}/uartstdio.o
+#${COMPILER}/moto.axf: ${COMPILER}/softssi.o
+#${COMPILER}/moto.axf: ${COMPILER}/uartstdio.o
 #${COMPILER}/moto.axf: ${COMPILER}/soft_spi_master.o
-#${COMPILER}/moto.axf: ${COMPILER}/spi_master.o
-${COMPILER}/moto.axf: ${COMPILER}/ti_master.o
+${COMPILER}/moto.axf: ${COMPILER}/spi_master.o
+#${COMPILER}/moto.axf: ${COMPILER}/ti_master.o
 #${COMPILER}/moto.axf: ${COMPILER}/moto.o
 ${COMPILER}/moto.axf: ${COMPILER}/gpio.o
-${COMPILER}/moto.axf: ${COMPILER}/interrupt.o
 ${COMPILER}/moto.axf: ${COMPILER}/ssi.o
 ${COMPILER}/moto.axf: ${COMPILER}/sysctl.o
-${COMPILER}/moto.axf: ${COMPILER}/systick.o
 ${COMPILER}/moto.axf: ${COMPILER}/uart.o
-${COMPILER}/moto.axf: ${COMPILER}/cpu.o
+${COMPILER}/moto.axf: ${COMPILER}/uartstdio.o
 ${COMPILER}/moto.axf: moto.ld
 SCATTERgcc_moto=moto.ld
 ENTRY_moto=ResetISR
-CFLAGSgcc=-DTARGET_IS_TM4C129_RA0 -DPART_TM4C1294NCPD
-
+CFLAGSgcc=-DTARGET_IS_TM4C129_RA0
+#CFLAGSgcc=-DTARGET_IS_TM4C123_RA1
 #
 # Include the automatically generated dependency files.
 #
