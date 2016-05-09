@@ -241,5 +241,6 @@ ${COMPILER}${SUFFIX}/%.axf:
 	      ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                      \
 	      '${LIBM}' '${LIBC}' '${LIBGCC}'
 	@${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
+	${PREFIX}-size gcc/${notdir ${@:.axf=}}.axf
 endif
 
