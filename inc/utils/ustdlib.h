@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-// uartstdio.h - Prototypes for the UART console functions.
+// ustdlib.h - Prototypes for simple standard library functions.
 //
 // Copyright (c) 2007-2015 Texas Instruments Incorporated.  All rights reserved.
 // Software License Agreement
@@ -22,10 +22,16 @@
 //
 //*****************************************************************************
 
-#ifndef __UARTSTDIO_H__
-#define __UARTSTDIO_H__
+#ifndef __USTDLIB_H__
+#define __USTDLIB_H__
 
+//*****************************************************************************
+//
+// Include the standard C headers upon which these replacements are based.
+//
+//*****************************************************************************
 #include <stdarg.h>
+#include <time.h>
 
 //*****************************************************************************
 //
@@ -40,39 +46,29 @@ extern "C"
 
 //*****************************************************************************
 //
-// If built for buffered operation, the following labels define the sizes of
-// the transmit and receive buffers respectively.
-//
-//*****************************************************************************
-#ifdef UART_BUFFERED
-#ifndef UART_RX_BUFFER_SIZE
-#define UART_RX_BUFFER_SIZE     128
-#endif
-#ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE     4096
-#endif
-#endif
-
-//*****************************************************************************
-//
 // Prototypes for the APIs.
 //
 //*****************************************************************************
-extern void UARTStdioConfig(uint32_t ui32Port, uint32_t ui32Baud,
-                            uint32_t ui32SrcClock);
-extern int UARTgets(char *pcBuf, uint32_t ui32Len);
-extern unsigned char UARTgetc(void);
-extern void UARTprintf(const char *pcString, ...);
-extern void UARTvprintf(const char *pcString, va_list vaArgP);
-extern int UARTwrite(const char *pcBuf, uint32_t ui32Len);
-#ifdef UART_BUFFERED
-extern int UARTPeek(unsigned char ucChar);
-extern void UARTFlushTx(bool bDiscard);
-extern void UARTFlushRx(void);
-extern int UARTRxBytesAvail(void);
-extern int UARTTxBytesFree(void);
-extern void UARTEchoSet(bool bEnable);
-#endif
+extern void ulocaltime(time_t timer, struct tm *tm);
+extern time_t umktime(struct tm *timeptr);
+extern int urand(void);
+extern int usnprintf(char * restrict s, size_t n, const char * restrict format,
+                     ...);
+extern int usprintf(char * restrict s, const char * restrict format, ...);
+extern void usrand(unsigned int seed);
+extern int ustrcasecmp(const char *s1, const char *s2);
+extern int ustrcmp(const char *s1, const char *s2);
+extern size_t ustrlen(const char *s);
+extern int ustrncasecmp(const char *s1, const char *s2, size_t n);
+extern int ustrncmp(const char *s1, const char *s2, size_t n);
+extern char *ustrncpy(char * restrict s1, const char * restrict s2, size_t n);
+extern char *ustrstr(const char *s1, const char *s2);
+extern float ustrtof(const char * restrict nptr,
+                     const char ** restrict endptr);
+extern unsigned long int ustrtoul(const char * restrict nptr,
+                                  const char ** restrict endptr, int base);
+extern int uvsnprintf(char * restrict s, size_t n,
+                      const char * restrict format, va_list arg);
 
 //*****************************************************************************
 //
@@ -83,4 +79,4 @@ extern void UARTEchoSet(bool bEnable);
 }
 #endif
 
-#endif // __UARTSTDIO_H__
+#endif // __USTDLIB_H__

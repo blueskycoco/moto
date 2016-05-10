@@ -153,7 +153,7 @@ initUart(void)
     //
     // Prompt for text to be entered.
     //
-    UARTSend((uint8_t *)"\033[2JEnter text: ", 16);
+//    UARTSend((uint8_t *)"\033[2JEnter text: ", 16);
 	InitConsole();
 
 }
