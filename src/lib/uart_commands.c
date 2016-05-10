@@ -62,7 +62,7 @@ tCmdLineEntry g_psCmdTable[] =
 	{"busyHW",   CMD_busyHW,    " : Checks if the cSPIN is Busy by hardware - active Busy signal"},
 	{"busySW",   CMD_busySW,    " : Checks if the cSPIN is Busy by SPI - Busy flag bit in Status Register"},
 	{"flagHW",   CMD_flagHW,    " : Checks cSPIN Flag signal"},
-	{"pwm",   	 CMD_pwm,	    " : STCK pwm,Ex pwm 2000 0x00FFFFFF"},
+	{"pwm",   	 CMD_pwm,	    " : STCK pwm,Ex pwm 2000 1000000"},
 	{"auto",   	 CMD_auto,	    " : auto test mode"},
 #if 0		
     {"hib",      CMD_hib,       " : Place system into hibernate mode"},
