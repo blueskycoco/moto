@@ -43,7 +43,8 @@ static void IntDefaultHandler(void);
 //*****************************************************************************
 extern void UARTIntHandler(void);
 extern void UARTStdioIntHandler(void);
-
+extern void IntGPIOa(void);
+extern void IntGPIOb(void);
 //*****************************************************************************
 //
 // The entry point for the application.
@@ -84,8 +85,8 @@ void (* const g_pfnVectors[])(void) =
     0,                                      // Reserved
     IntDefaultHandler,                      // The PendSV handler
     IntDefaultHandler,                      // The SysTick handler
-    IntDefaultHandler,                      // GPIO Port A
-    IntDefaultHandler,                      // GPIO Port B
+    IntGPIOa,                      			// GPIO Port A
+    IntGPIOb,                      			// GPIO Port B
     IntDefaultHandler,                      // GPIO Port C
     IntDefaultHandler,                      // GPIO Port D
     IntDefaultHandler,                      // GPIO Port E
