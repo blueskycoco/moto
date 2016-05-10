@@ -12,6 +12,7 @@
 #include "inc/hw_ints.h"
 #include "cspin.h"
 #include "l6480.h"
+int flag,busy;
 extern void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count);
 void
 Delay(uint32_t ui32Seconds)
@@ -44,14 +45,20 @@ void InitDelay()
 void
 IntGPIOa(void)
 {   
-	int ind=((ROM_GPIOPinRead(GPIO_PORTA_BASE, GPIO_PIN_7)&(GPIO_PIN_7))==GPIO_PIN_7)?1:0;
-	UARTprintf("FLAG Int %d\n",ind);
+	if(GPIOIntStatus(GPIO_PORTA_BASE, true)&GPIO_PIN_7)
+	{	
+		flag=((ROM_GPIOPinRead(GPIO_PORTA_BASE, GPIO_PIN_7)&(GPIO_PIN_7))==GPIO_PIN_7)?0:1;
+		GPIOIntClear(GPIO_PORTA_BASE,GPIO_INT_PIN_7);
+	}
 }
 void
 IntGPIOb(void)
 {
-	int ind=((ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_7)&(GPIO_PIN_7))==GPIO_PIN_7)?1:0;
-	UARTprintf("BUSY Int %d\n",ind);
+	if(GPIOIntStatus(GPIO_PORTB_BASE, true)&GPIO_PIN_7)
+	{
+		busy=((ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_7)&(GPIO_PIN_7))==GPIO_PIN_7)?0:1;
+		GPIOIntClear(GPIO_PORTB_BASE,GPIO_INT_PIN_7);
+	}
 }
 void
 InitConsole(void)
@@ -164,39 +171,46 @@ initUart(void)
 //*****************************************************************************
 void cSPIN_Peripherals_Init(void)
 {
+	uint32_t tmp;
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 	GPIOPinConfigure(GPIO_PA2_SSI0CLK);
-	//GPIOPinConfigure(GPIO_PA3_SSI0FSS);
+	GPIOPinConfigure(GPIO_PA3_SSI0FSS);
 	GPIOPinConfigure(GPIO_PA4_SSI0RX);
 	GPIOPinConfigure(GPIO_PA5_SSI0TX);
 	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, GPIO_PIN_6);
-	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, GPIO_PIN_3);
+	//GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, GPIO_PIN_3);
 	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_6, GPIO_PIN_6);
-	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
-	GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_5 | GPIO_PIN_4 | GPIO_PIN_3 |
+	//GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
+	GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_5 | GPIO_PIN_4 | GPIO_PIN_3|
 					   GPIO_PIN_2);
 	SSIConfigSetExpClk(SSI0_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_3,
 						   SSI_MODE_MASTER, 1000000, 8);
 	SSIEnable(SSI0_BASE);
-
+	while(SSIDataGetNonBlocking(SSI0_BASE, &tmp))
+    {
+    }
 	ROM_IntMasterEnable();
 
-	ROM_IntPrioritySet(INT_GPIOA, 0x00);
-    ROM_IntPrioritySet(INT_GPIOB, 0x00);
-	//FLAG config
-	ROM_IntDisable(INT_GPIOA);
-	ROM_GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, GPIO_PIN_7);
-	ROM_GPIOIntTypeSet(GPIO_PORTA_BASE, GPIO_PIN_7, GPIO_BOTH_EDGES);
+	GPIOIntDisable(GPIO_PORTA_BASE,GPIO_INT_PIN_7);
+	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, GPIO_PIN_7);
+	GPIOIntTypeSet(GPIO_PORTA_BASE, GPIO_PIN_7, GPIO_BOTH_EDGES);
 	ROM_IntEnable(INT_GPIOA);
+	GPIOIntEnable(GPIO_PORTA_BASE,GPIO_INT_PIN_7);
+	int ui32Status = GPIOIntStatus(GPIO_PORTA_BASE, true);
+	GPIOIntClear(GPIO_PORTA_BASE, ui32Status);
 	
 	//BUSY config
-	ROM_IntDisable(INT_GPIOB);
-	ROM_GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_7);
-	ROM_GPIOIntTypeSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_BOTH_EDGES);
+	GPIOIntDisable(GPIO_PORTB_BASE,GPIO_INT_PIN_7);
+	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_7);
+	GPIOIntTypeSet(GPIO_PORTB_BASE, GPIO_PIN_7, GPIO_BOTH_EDGES);
 	ROM_IntEnable(INT_GPIOB);
-
+	GPIOIntEnable(GPIO_PORTB_BASE,GPIO_INT_PIN_7);
+	ui32Status = GPIOIntStatus(GPIO_PORTB_BASE, true);
+	GPIOIntClear(GPIO_PORTB_BASE, ui32Status);
+	flag=((ROM_GPIOPinRead(GPIO_PORTA_BASE, GPIO_PIN_7)&(GPIO_PIN_7))==GPIO_PIN_7)?0:1;
+	busy=((ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_7)&(GPIO_PIN_7))==GPIO_PIN_7)?0:1;
 	//config pwm
 	SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
@@ -252,7 +266,7 @@ void cSPIN_Gpio_Toggle(uint32_t GPIOx, uint16_t GPIO_Pin)
 void cSPIN_PWM_Enable(uint16_t Period)
 {
 	uint32_t param=SysCtlClockGet()/Period;
-	UARTprintf("PWM set to %d\n",param);
+	//UARTprintf("PWM set to %d\n",param);
 	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, param);
 	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0,
          PWMGenPeriodGet(PWM0_BASE, PWM_GEN_0) / 2);
@@ -719,8 +733,9 @@ uint16_t cSPIN_Get_Status(void)
   */
 uint8_t cSPIN_Busy_HW(void)
 {
-	if((ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_7)&(GPIO_PIN_7))!=GPIO_PIN_7) return 0x01;
-	else return 0x00;
+	//if((ROM_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_7)&(GPIO_PIN_7))!=GPIO_PIN_7) return 0x01;
+	//else return 0x00;
+	return busy;
 }
 /**
   * @brief  Checks if the cSPIN is Busy by SPI - Busy flag bit in Status Register.
@@ -740,8 +755,9 @@ uint8_t cSPIN_Busy_SW(void)
   */
 uint8_t cSPIN_Flag(void)
 {
-	if((ROM_GPIOPinRead(GPIO_PORTA_BASE, GPIO_PIN_7)&(GPIO_PIN_7))!=GPIO_PIN_7) return 0x01;
-	else return 0x00;
+	//if((ROM_GPIOPinRead(GPIO_PORTA_BASE, GPIO_PIN_7)&(GPIO_PIN_7))!=GPIO_PIN_7) return 0x01;
+	//else return 0x00;
+	return flag;
 }
 
 /**
@@ -752,11 +768,11 @@ uint8_t cSPIN_Flag(void)
 uint8_t cSPIN_Write_Byte(uint8_t byte)
 {
 	uint32_t result=0;
-	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, 0);
+	//GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, 0);
 	SSIDataPut(SSI0_BASE, byte);
 	while(SSIBusy(SSI0_BASE));
 	SSIDataGet(SSI0_BASE, &result);
-	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
+	//GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
 
 	return (result&0xff);
 }
