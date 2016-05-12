@@ -287,7 +287,7 @@ void auto_test(void)
 	 cSPIN_Delay(0x004FFFFF);
 	 UARTprintf("Test of the Flag pin by polling, wait in endless cycle if problem is detected\n");
 	 /* Test of the Flag pin by polling, wait in endless cycle if problem is detected */
-	 if(cSPIN_Flag()) while(1);
+	 //dillon if(cSPIN_Flag()) while(1);
 	 UARTprintf("Issue cSPIN Go Home command\n");
 	 /* Issue cSPIN Go Home command */
 	 cSPIN_Go_Home();
