@@ -195,7 +195,7 @@ void auto_test(void)
 	 /**********************************************************************/
 	 /* Start example of FLAG interrupt management */
 	 /**********************************************************************/
-	 UARTprintf("Start example of FLAG interrupt management\n");
+	 UARTprintf("JUDY Start example of FLAG interrupt management\n");
 	 /* Clear Flag pin */
 	 cSPIN_rx_data = cSPIN_Get_Status();	   
 	 /* Interrupt configuration for FLAG signal */
@@ -285,7 +285,7 @@ void auto_test(void)
 	 UARTprintf("Wait a few seconds, LED busy is off\n");
 	 /* Wait a few seconds, LED busy is off */
 	 cSPIN_Delay(0x004FFFFF);
-	 UARTprintf("Test of the Flag pin by polling, wait in endless cycle if problem is detected\n");
+	 UARTprintf("JUDY Test of the Flag pin by polling, wait in endless cycle if problem is detected\n");
 	 /* Test of the Flag pin by polling, wait in endless cycle if problem is detected */
 	 //dillon if(cSPIN_Flag()) while(1);
 	 UARTprintf("Issue cSPIN Go Home command\n");
