@@ -30,7 +30,11 @@
 #include "utils/uartstdio.h"
 #include "utils/cmdline.h"
 #include "uart_commands.h"
-
+extern uint32_t responseArray[NUMBER_OF_SLAVES];
+extern uint8_t commandArray[NUMBER_OF_SLAVES];
+extern uint32_t argumentArray[NUMBER_OF_SLAVES];
+extern uint8_t arrayTxBytes[NUMBER_OF_SLAVES];
+extern uint32_t arrayValues[NUMBER_OF_SLAVES];
 //*****************************************************************************
 //
 // Table of valid command strings, callback functions and help messages.  This
@@ -64,14 +68,207 @@ tCmdLineEntry g_psCmdTable[] =
 	{"flagHW",   CMD_flagHW,    " : Checks cSPIN Flag signal"},
 	{"pwm",   	 CMD_pwm,	    " : STCK pwm,Ex pwm 2000 1000000"},
 	{"auto",   	 CMD_auto,	    " : auto test mode"},
-#if 0		
-    {"hib",      CMD_hib,       " : Place system into hibernate mode"},
-    {"rand",     CMD_rand,      " : Start automatic color sequencing"},
-    {"intensity",CMD_intensity, " : Adjust brightness 0 to 100 percent"},
-    {"rgb",      CMD_rgb,       " : Adjust color 000000-FFFFFF HTML notation"},
-#endif
+	{"msParam",  CMD_MsParam,  	" : Issues cSPIN Set multi Param command,Ex msParam No(0-3) param value"},
+	{"mgParam",  CMD_MgParam,   " : Issues cSPIN Get multi Param command,Ex mgParam No(0-3) param"},
+	{"mMove",    CMD_MMove,     " : Issues cSPIN multi Move command,Ex mMove No(0-3) dir(1 fwd,0 rev) n_step"},
+	{"mRun",     CMD_MRun,      " : Issues cSPIN multi Run command,Ex mRun No(0-3) dir(1 fwd,0 rev) speed"},
+	{"mCmd",     CMD_MCmd,      " : Issues cSPIN command(like goto,gotdir,gohome,etc),Ex mCmd No(0-3) param value"},
+	{"mgetStatus",CMD_MgetStatus, " : Issues cSPIN Get all l6480 Status command"},
+	{"mbusySW",   CMD_MbusySW,    " : Checks if the multi cSPIN is Busy by SPI - Busy flag bit in Status Register"},
+	{"mauto",   	 CMD_Mauto,	    " : Multi auto test mode"},
     { 0, 0, 0 }
 };
+int
+CMD_Mauto(int argc, char **argv)
+{
+    //
+    // Keep the compiler happy.
+    //
+    (void)argc;
+    (void)argv;
+
+	auto_mtest();
+
+    return (0);
+}
+int
+CMD_MbusySW(int argc, char **argv)
+{
+    //
+    // Keep the compiler happy.
+    //
+    (void)argc;
+    (void)argv;
+
+    if(cSPIN_One_Or_More_Slaves_Busy_SW(NUMBER_OF_SLAVES))
+		UARTprintf("at least one sw Moto is busy\n");
+	else
+		UARTprintf("all sw Moto is free\n");
+
+    return (0);
+}
+int
+CMD_MgetStatus(int argc, char **argv)
+{
+    //
+    // Keep the compiler happy.
+    //
+    (void)argc;
+    (void)argv;
+
+	cSPIN_All_Slaves_Get_Status(NUMBER_OF_SLAVES, responseArray);
+    UARTprintf("Dev 0 Status = %2X\n",responseArray[0]);
+	UARTprintf("Dev 1 Status = %2X\n",responseArray[1]);
+	UARTprintf("Dev 2 Status = %2X\n",responseArray[2]);
+	UARTprintf("Dev 3 Status = %2X\n",responseArray[3]);
+    return (0);
+}
+int
+CMD_MCmd(int argc, char **argv)
+{
+	uint32_t ui32No;
+	uint32_t ui32Param;
+	uint32_t ui32Value;
+	int i;
+    //
+    // Keep the compiler happy.
+    //
+    (void)argc;
+    (void)argv;
+	if(argc >= 3)
+	{
+		ui32No 	  =	ustrtoul(argv[1], 0, 10);
+		ui32Param = ustrtoul(argv[2], 0, 10);
+		if(argc==4)
+		ui32Value = ustrtoul(argv[3], 0, 10);
+		for (i = 0; i < NUMBER_OF_SLAVES; i++)
+		  {
+		    if (i == ui32No)
+		    {
+		      commandArray[i] = (uint8_t)ui32Param;
+			  if(argc==4)
+		      	argumentArray[i] = ui32Value;
+		    }
+		    else
+		    {
+		      commandArray[i] = cSPIN_NOP;
+		      argumentArray[i] = cSPIN_NOP;
+		    }
+		  }
+		cSPIN_All_Slaves_Send_Command(NUMBER_OF_SLAVES, commandArray, argumentArray);
+	}
+	
+    return (0);
+}
+int
+CMD_MRun(int argc, char **argv)
+{
+	uint32_t ui32No;
+	uint32_t ui32Dir;
+	uint32_t ui32Speed;
+    //
+    // Keep the compiler happy.
+    //
+    (void)argc;
+    (void)argv;
+	if(argc == 4)
+	{
+		ui32No 	  =	ustrtoul(argv[1], 0, 10);
+		ui32Dir   = ustrtoul(argv[2], 0, 10);
+		ui32Speed  = ustrtoul(argv[3], 0, 10);
+		cSPIN_One_Slave_Run(ui32No,NUMBER_OF_SLAVES,ui32Dir,ui32Speed);
+	}
+	
+    return (0);
+}
+int
+CMD_MMove(int argc, char **argv)
+{
+	uint32_t ui32No;
+	uint32_t ui32Dir;
+	uint32_t ui32Step;
+    //
+    // Keep the compiler happy.
+    //
+    (void)argc;
+    (void)argv;
+	if(argc == 4)
+	{
+		ui32No 	  =	ustrtoul(argv[1], 0, 10);
+		ui32Dir   = ustrtoul(argv[2], 0, 10);
+		ui32Step  = ustrtoul(argv[3], 0, 10);
+		cSPIN_One_Slave_Move(ui32No,NUMBER_OF_SLAVES,ui32Dir,ui32Step);
+	}
+	
+    return (0);
+}
+int
+CMD_MsParam(int argc, char **argv)
+{
+	uint32_t ui32No;
+	uint32_t ui32Param;
+	uint32_t ui32Value;
+	int i;
+    //
+    // Keep the compiler happy.
+    //
+    (void)argc;
+    (void)argv;
+	if(argc == 4)
+	{
+		ui32No 	  =	ustrtoul(argv[1], 0, 10);
+		ui32Param = ustrtoul(argv[2], 0, 10);
+		ui32Value = ustrtoul(argv[3], 0, 10);
+		for (i = 0; i < NUMBER_OF_SLAVES; i++)
+		  {
+		    if (i == ui32No)
+		    {
+		      arrayTxBytes[i] = (uint8_t)ui32Param;
+		      arrayValues[i] = ui32Value;
+		    }
+		    else
+		    {
+		      arrayTxBytes[i] = cSPIN_NOP;
+		      arrayValues[i] = cSPIN_NOP;
+		    }
+		  }
+		cSPIN_All_Slaves_Set_Param(NUMBER_OF_SLAVES,arrayTxBytes,arrayValues);
+	}
+	
+    return (0);
+}
+int
+CMD_MgParam(int argc, char **argv)
+{
+	uint32_t ui32No;
+	uint32_t ui32Param;
+	int i;
+    //
+    // Keep the compiler happy.
+    //
+    (void)argc;
+    (void)argv;
+	if(argc == 3)
+	{
+		ui32No 	  =	ustrtoul(argv[1], 0, 10);
+		ui32Param = ustrtoul(argv[2], 0, 10);
+		for (i = 0; i < NUMBER_OF_SLAVES; i++)
+		  {
+		    if (i == ui32No)
+		    {
+		      commandArray[i] = (uint8_t)ui32Param;
+		    }
+		    else
+		    {
+		      commandArray[i] = cSPIN_NOP;
+		    }
+		  }
+		cSPIN_All_Slaves_Set_Param(NUMBER_OF_SLAVES,arrayTxBytes,responseArray);
+		UARTprintf("Dev %d Reg %2X = %2X\n",ui32No,ui32Param,responseArray[ui32No]);
+	}
+	
+    return (0);
+}
 int
 CMD_nop(int argc, char **argv)
 {
@@ -498,135 +695,4 @@ CMD_help(int argc, char **argv)
 
     return (0);
 }
-#if 0
-//*****************************************************************************
-//
-// Command: hib
-//
-// Force the device into hibernate mode now.
-//
-//*****************************************************************************
-int
-CMD_hib(int argc, char **argv)
-{
-    //
-    // Keep the compiler happy.
-    //
-    (void)argc;
-    (void)argv;
 
-    //
-    // Enter hibernate state.
-    //
-    AppHibernateEnter();
-
-    return (0);
-}
-
-//*****************************************************************************
-//
-// Command: rand
-//
-// Starts the automatic light sequence immediately.
-//
-//*****************************************************************************
-int
-CMD_rand(int argc, char **argv)
-{
-    //
-    // Keep the compiler happy.
-    //
-    (void)argc;
-    (void)argv;
-
-    //
-    // Turn on automatic mode.
-    //
-    g_sAppState.ui32Mode = APP_MODE_AUTO;
-
-    return (0);
-}
-
-//*****************************************************************************
-//
-// Command: intensity
-//
-// Takes a single argument that is between zero and one hundred. The argument
-// must be an integer.  This is interpreted as the percentage of maximum
-// brightness with which to display the current color.
-//
-//*****************************************************************************
-int
-CMD_intensity(int argc, char **argv)
-{
-    uint32_t ui32Intensity;
-
-    //
-    // This command requires one parameter.
-    //
-    if(argc == 2)
-    {
-        //
-        // Extract the intensity from the command line parameter.
-        //
-        ui32Intensity = ustrtoul(argv[1], 0, 10);
-
-        //
-        // Convert the value to a fractional floating point value.
-        //
-        g_sAppState.fIntensity = ((float) ui32Intensity) / 100.0f;
-
-        //
-        // Set the intensity of the RGB LED.
-        //
-        RGBIntensitySet(g_sAppState.fIntensity);
-    }
-
-    return(0);
-
-}
-
-//*****************************************************************************
-//
-// Command: rgb
-//
-// Takes a single argument that is a string between 000000 and FFFFFF.
-// This is the HTML color code that should be used to set the RGB LED color.
-//
-// http://www.w3schools.com/html/html_colors.asp
-//
-//*****************************************************************************
-int
-CMD_rgb(int argc, char **argv)
-{
-    uint32_t ui32HTMLColor;
-
-    //
-    // This command requires one parameter.
-    //
-    if(argc == 2)
-    {
-        //
-        // Extract the required color from the command line parameter.
-        //
-        ui32HTMLColor = ustrtoul(argv[1], 0, 16);
-
-        //
-        // Decompose teh color into red, green and blue components.
-        //
-        g_sAppState.ui32Colors[RED] = (ui32HTMLColor & 0xFF0000) >> 8;
-        g_sAppState.ui32Colors[GREEN] = (ui32HTMLColor & 0x00FF00);
-        g_sAppState.ui32Colors[BLUE] = (ui32HTMLColor & 0x0000FF) << 8;
-
-        //
-        // Turn off automatic mode and set the desired LED color.
-        //
-        g_sAppState.ui32Mode = APP_MODE_REMOTE;
-        g_sAppState.ui32ModeTimer = 0;
-        RGBColorSet(g_sAppState.ui32Colors);
-    }
-
-    return (0);
-
-}
-#endif

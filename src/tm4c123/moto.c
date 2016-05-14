@@ -48,7 +48,7 @@ double   MAX_SPEED[NUMBER_OF_SLAVES] = cSPIN_DC_CONF_PARAM_MAX_SPEED;
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 #define DELAY_COUNT    0x3FFFF
-
+uint8_t number_of_slaves = NUMBER_OF_SLAVES;
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 uint32_t i;        
@@ -189,7 +189,305 @@ UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count)
         ROM_UARTCharPutNonBlocking(UART0_BASE, *pui8Buffer++);
     }
 }
+void auto_mtest(void)
+{
+	int i;
+    if (number_of_slaves > 1)
+    {
+      /* Initialization of command array with NOP instruction */
+      for (i=0;i<number_of_slaves;i++)
+      {
+        commandArray[i] = cSPIN_NOP; 
+      }
 
+      /* Move DEVICE 1, keep other slaves stopped */
+      cSPIN_One_Slave_Move(DEVICE_1, number_of_slaves, FWD, 150000);
+     
+      /* Wait until not busy - busy pin test */
+      while(cSPIN_Busy_HW());
+
+      /* Move DEVICE 1, keep other slaves stopped */
+      cSPIN_One_Slave_Move(DEVICE_2, number_of_slaves, FWD, 60000);
+     
+      /* Wait until not busy - busy pin test */
+      while(cSPIN_Busy_HW());
+    
+      /* Move DEVICE 1 by 60000 steps in reverse direction */
+      /* Run DEVICE 2 at 400 steps/s in forward direction */
+      /* No operation for other slaves */
+      commandArray[DEVICE_1] = (uint8_t) cSPIN_MOVE |(uint8_t) REV;
+      argumentArray[DEVICE_1] = 60000;
+      commandArray[DEVICE_2] = (uint8_t) cSPIN_RUN |(uint8_t) FWD;
+      argumentArray[DEVICE_2] = Speed_Steps_to_Par(400);
+      cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, argumentArray);
+
+      /* Wait until not busy - busy pin test */
+      /* DEVICE 1 and DEVICE 2 turns in opposite directions */
+      while(cSPIN_Busy_HW());
+
+      /* Wait few seconds - DEVICE 1 is stopped, DEVICE 2 turns forward */
+      cSPIN_Delay(0x00FFFFFF);
+
+      /* Move DEVICE 1 to HOME position via the shortest path */
+      /* Run DEVICE 2 at 150 steps/s in reverse direction */
+      /* No operation for other slaves */
+      commandArray[DEVICE_1] = (uint8_t) cSPIN_GO_HOME;
+      commandArray[DEVICE_2] = (uint8_t) cSPIN_RUN |(uint8_t) REV;
+      argumentArray[DEVICE_2] = Speed_Steps_to_Par(150);
+      cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, argumentArray);          
+      
+      /* Wait until not busy - busy pin test */
+      /* DEVICE 1 goes to zero position, turning reverse in this example */
+      /* DEVICE 2 changes direction to turn reverse */
+      while(cSPIN_Busy_HW());        
+
+      /* Wait few seconds - DEVICE 1 is stopped, DEVICE 2 turns reverse */
+      cSPIN_Delay(0x00FFFFFF);
+    
+      /* No change for DEVICE 1 */
+      /* Stop DEVICE 2 */
+      /* No operation for other slaves */
+      commandArray[DEVICE_1] = cSPIN_NOP;
+      commandArray[DEVICE_2] = cSPIN_SOFT_STOP;         
+      cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, argumentArray);
+    
+      /* Wait until not busy - busy pin test */
+      while(cSPIN_Busy_HW());
+    }
+        else /* (number_of_slaves > 1) */
+        {
+          /* Move by 60,000 steps rorward, range 0 to 4,194,303 */
+          cSPIN_One_Slave_Move(number_of_slaves, DEVICE_1, FWD, 60000);
+	
+          /* Wait until not busy - busy pin test */
+          while(cSPIN_Busy_HW());
+	
+/* Send cSPIN command change hold duty cycle to 0.5% */
+          commandArray[DEVICE_1] = cSPIN_KVAL_HOLD;
+          argumentArray[DEVICE_1] = Kval_Perc_to_Par(0.5);
+          cSPIN_All_Slaves_Set_Param(number_of_slaves, commandArray, argumentArray);
+	
+          /* Send cSPIN command change run duty cycle to 5% */
+          commandArray[DEVICE_1] = cSPIN_KVAL_RUN;
+          argumentArray[DEVICE_1] = Kval_Perc_to_Par(5);
+          cSPIN_All_Slaves_Set_Param(number_of_slaves, commandArray, argumentArray);        
+
+          /* Run constant speed of 50 steps/s reverse direction */
+          cSPIN_One_Slave_Run(DEVICE_1, number_of_slaves, REV, Speed_Steps_to_Par(50));
+
+          /* Wait few seconds - motor turns */
+          cSPIN_Delay(0x00FFFFFF);
+	
+          /* Perform SoftStop commmand */
+          commandArray[DEVICE_1] = cSPIN_SOFT_STOP;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);
+          /* RESET KVAL_HOLD to initial value */
+          commandArray[DEVICE_1] = cSPIN_KVAL_HOLD;
+          argumentArray[DEVICE_1] = cSPIN_RegsStructArray[DEVICE_1].KVAL_HOLD;
+          cSPIN_All_Slaves_Set_Param(number_of_slaves, commandArray, argumentArray);
+	
+          /* RESET KVAL_RUN to initial value */
+          commandArray[DEVICE_1] = cSPIN_KVAL_RUN;
+          argumentArray[DEVICE_1] = cSPIN_RegsStructArray[DEVICE_1].KVAL_RUN;
+          cSPIN_All_Slaves_Set_Param(number_of_slaves, commandArray, argumentArray);
+
+          /* Wait until not busy - busy status check in Status register */
+          while(cSPIN_Busy_SW());
+	
+          /* Move by 100,000 steps forward, range 0 to 4,194,303 */
+          cSPIN_One_Slave_Move(DEVICE_1, number_of_slaves, FWD, (uint32_t)(100000));        
+	
+          /* Wait until not busy */
+          while(cSPIN_One_Or_More_Slaves_Busy_SW(number_of_slaves));
+	
+          /* Test of the Flag pin by polling, wait in endless cycle if problem is detected */
+          if(cSPIN_Flag()) while(1);
+	
+          /* Issue cSPIN Go Home command */
+          commandArray[DEVICE_1] = (uint8_t) cSPIN_GO_HOME;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);
+
+          /* Wait until not busy - busy pin test */
+          while(cSPIN_Busy_HW());
+	
+          /* Issue cSPIN Go To command */
+          commandArray[DEVICE_1] = cSPIN_GO_TO;
+          argumentArray[DEVICE_1] = 0x0000FFFF;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, argumentArray);
+          /* Wait until not busy - busy pin test */
+          while(cSPIN_Busy_HW());
+	
+          /* Issue cSPIN Go To command */
+          commandArray[DEVICE_1] = (uint8_t)cSPIN_GO_TO_DIR | (uint8_t)FWD;
+          argumentArray[DEVICE_1] = 0x0001FFFF;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, argumentArray);
+          /* Wait until not busy - busy pin test */
+          while(cSPIN_Busy_HW());
+          /* Read run duty cycle (cSPIN_KVAL_RUN) parameter from cSPIN */
+          commandArray[DEVICE_1] = cSPIN_KVAL_RUN;
+          cSPIN_All_Slaves_Get_Param(number_of_slaves, commandArray, responseArray);
+
+          /* Read intersect speed (cSPIN_INT_SPD) parameter from cSPIN */
+          commandArray[DEVICE_1] = cSPIN_INT_SPD;
+          cSPIN_All_Slaves_Get_Param(number_of_slaves, commandArray, responseArray);
+
+          /* Read Status register content */
+          cSPIN_All_Slaves_Get_Status(number_of_slaves, responseArray);
+	
+          /* Read absolute position (cSPIN_ABS_POS) parameter from cSPIN */
+          commandArray[DEVICE_1] = cSPIN_ABS_POS;
+          cSPIN_All_Slaves_Get_Param(number_of_slaves, commandArray, responseArray);
+
+          /* Reset position counter */
+          commandArray[DEVICE_1] = cSPIN_RESET_POS;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);   
+
+          /* Read absolute position (cSPIN_ABS_POS) parameter from cSPIN */
+          commandArray[DEVICE_1] = cSPIN_ABS_POS;
+          cSPIN_All_Slaves_Get_Param(number_of_slaves, commandArray, responseArray);
+
+          /* Issue cSPIN Hard HiZ command - disable power stage (High Impedance) */
+          commandArray[DEVICE_1] = cSPIN_HARD_HIZ;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);
+ 
+          /********************************************************************/
+          /* Start example of GoUntil Command */
+          /********************************************************************/
+          /* Configure Interrupt for switch motor in case the MCU is used to pilot the switch */
+          //cSPIN_Switch_Motor_Interrupt_Config();
+          /* Motion in FW direction at speed 400steps/s via GoUntil command*/
+          /* When SW is closed:  */
+          /*    As ACT is set ot ACTION_COPY, ABS_POS is saved to MARK register */
+          /*    then a soft stop is done          */
+          commandArray[DEVICE_1] = (uint8_t)cSPIN_GO_UNTIL | (uint8_t)ACTION_COPY | (uint8_t)FWD;
+          argumentArray[DEVICE_1] = Speed_Steps_to_Par(400);
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, argumentArray);
+        
+          /* Waiting for soft Stop after GoUntil command*/
+          while(cSPIN_Busy_HW())
+          /* User action needed to go further */
+          /* User attention drawn by toggling a LED */
+  
+
+          /* Move by 50,000 steps in reverse direction, range 0 to 4,194,303 */
+          cSPIN_One_Slave_Move(DEVICE_1, number_of_slaves, REV, (uint32_t)(50000));
+       
+          /* Waiting for end of move command*/
+          while(cSPIN_Busy_HW());
+        
+          /* Go to Mark saved with GoUntil command */
+          commandArray[DEVICE_1] = cSPIN_GO_MARK;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);
+        
+          /* Wait until not busy - busy pin test */
+          while(cSPIN_Busy_HW());
+        
+          /********************************************************************/
+          /* End example of GoUntil Command */
+          /********************************************************************/
+        
+          cSPIN_Delay(0x00FFFFFF);
+        
+          /********************************************************************/
+          /* Start example of ReleaseSw Command */
+          /********************************************************************/
+          /* Motion via cSPIN_Release_SW command in REV direction at minimum speed*/
+          /* (or  5 steps/s is minimum speed is < 5step/s)*/
+          /* When SW is opened:  */
+          /*    As ACT is set ot ACTION_RESET, ABS_POS is reset i.e Home position is set */
+          /*    then a soft stop is done          */
+          commandArray[DEVICE_1] = (uint8_t)cSPIN_RELEASE_SW | (uint8_t)ACTION_RESET | (uint8_t)REV;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);          
+        
+          /* Waiting for soft Stop after ReleaseSw command*/
+          while(cSPIN_Busy_HW())
+          /* User action needed to go further */
+          /* User attention drawn by toggling a LED */
+
+
+          /* Move by 100,000 steps forward, range 0 to 4,194,303 */
+          cSPIN_One_Slave_Move(DEVICE_1, number_of_slaves, FWD, (uint32_t)(100000));
+       
+          /* Waiting for end of move command*/
+          while(cSPIN_Busy_HW());
+        
+          /* Go to Home set with ReleaseSW command */
+          commandArray[DEVICE_1] = (uint8_t) cSPIN_GO_HOME;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);
+        
+          /* Wait until not busy - busy pin test */
+          while(cSPIN_Busy_HW());
+          /********************************************************************/
+          /* End example of ReleaseSw Command */
+          /********************************************************************/
+    
+          /********************************************************************/
+          /* Start example of StepClock Command */
+          /********************************************************************/
+        
+          /* Enable Step Clock Mode */
+          commandArray[DEVICE_1] = (uint8_t)cSPIN_STEP_CLOCK | (uint8_t)FWD;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);
+        
+          /* Set PWM period to 500 so PWM Frequency = 1MHz/ 500 = 2KHz */
+          /* and so, motor moves at 2000 steps/s */
+          cSPIN_PWM_Enable(500);
+          cSPIN_Delay(0x00FFFFFF);
+          cSPIN_PWM_DISABLE();
+        
+          /* Get Status to clear FLAG due to step clock mode */
+          cSPIN_All_Slaves_Get_Status(number_of_slaves, responseArray);
+        
+          /********************************************************************/
+          /* End example of StepClock Command */
+          /********************************************************************/
+
+          /********************************************************************/
+          /* Start example of FLAG interrupt management */
+          /********************************************************************/
+          /* Interrupt configuration for FLAG signal */
+          //cSPIN_Flag_Interrupt_GPIO_Config();
+          /* Run constant speed of 400 steps/s forward direction */
+          cSPIN_One_Slave_Run(DEVICE_1, number_of_slaves, FWD, Speed_Steps_to_Par(400));        
+        
+          /* Tentative to write to the current motor absolute position register */
+          /* while the motor is running */
+          commandArray[DEVICE_1] = cSPIN_ABS_POS;
+          argumentArray[DEVICE_1] = 100;
+          cSPIN_All_Slaves_Set_Param(number_of_slaves, commandArray, argumentArray);       
+          cSPIN_Delay(0x00FFFFFF);
+          /* Get Status to clear FLAG due to non-performable command */
+          cSPIN_All_Slaves_Get_Status(number_of_slaves, responseArray);
+          /* Perform SoftStop commmand */
+          commandArray[DEVICE_1] = cSPIN_SOFT_STOP;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);
+          /* Wait until not busy - busy pin test */
+          while(cSPIN_Busy_HW());
+          /********************************************************************/
+          /* End example of FLAG interrupt management */
+          /********************************************************************/
+      
+          /********************************************************************/
+          /* Start example of BUSY interrupt management */
+          /********************************************************************/
+          /* Interrupt configuration for BUSY signal */
+          //cSPIN_Busy_Interrupt_GPIO_Config();
+          /* Move by 100,000 steps forward, range 0 to 4,194,303 */
+          cSPIN_One_Slave_Move(DEVICE_1, number_of_slaves, REV, (uint32_t)(100000));
+          /* During busy time the POWER LED is switched OFF */
+          /* Wait until not busy - busy pin test */
+	  while(cSPIN_Busy_HW());
+          /* Disable the power bridges */
+          commandArray[DEVICE_1] = cSPIN_SOFT_HIZ;
+          cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);
+          /********************************************************************/
+          /* End example of BUSY interrupt management */
+          /********************************************************************/
+        }  /* (number_of_slaves > 1) */
+        /**********************************************************************/
+        /* End example of DAISY CHAINING */
+        /**********************************************************************/
+}
 void auto_test(void)
 {	 
 	 /**********************************************************************/
@@ -467,6 +765,7 @@ int
 main(void)
 {
 	int32_t i32CommandStatus;
+	int i;
 	initUart();
 	UARTprintf("Welcome to the Tiva C Series TM4C123G LaunchPad!\n");
 	UARTprintf("Type 'help' for a list of commands to control Moto\n");
@@ -479,6 +778,7 @@ main(void)
 	//cSPIN_PWM_Enable(2000);
     //cSPIN_Delay(0x00FFFFFF);
     //cSPIN_PWM_DISABLE();
+    #if 0
 	/* Acceleration rate settings to cSPIN_CONF_PARAM_ACC in steps/s2, range 14.55 to 59590 steps/s2 */
 	cSPIN_RegsStruct.ACC 		= AccDec_Steps_to_Par(cSPIN_CONF_PARAM_ACC);
 	/* Deceleration rate settings to cSPIN_CONF_PARAM_DEC in steps/s2, range 14.55 to 59590 steps/s2 */
@@ -546,7 +846,60 @@ main(void)
     /* get the values of all cSPIN registers and print them to the terminal I/O */
     cSPIN_Registers_Get(&cSPIN_RegsStruct);
 #endif /* defined(DEBUG) */
+#else
+/**********************************************************************/
+        /* Start example of DAISY CHAINING */
+        /**********************************************************************/
+        /* Structure initialization by default values, in order to avoid blank records */
+        for (i=0;i<number_of_slaves;i++)
+        {
+	   cSPIN_Regs_Struct_Reset(&cSPIN_RegsStructArray[i]);
+        }
+        
+        /* Setting of parameters for ALL DEVICES */
+        for (i=0;i<number_of_slaves;i++)
+        {
+          cSPIN_RegsStructArray[i].ACC 		= AccDec_Steps_to_Par(ACC[i]);
+          cSPIN_RegsStructArray[i].DEC 		= AccDec_Steps_to_Par(DEC[i]);
+          cSPIN_RegsStructArray[i].MAX_SPEED 	= MaxSpd_Steps_to_Par(MAX_SPEED[i]);
+          cSPIN_RegsStructArray[i].FS_SPD 	= FSSpd_Steps_to_Par(FS_SPD[i]);
+          cSPIN_RegsStructArray[i].MIN_SPEED	= LSPD_BIT[i]|MinSpd_Steps_to_Par(MIN_SPEED[i]);
+          cSPIN_RegsStructArray[i].KVAL_ACC 	= Kval_Perc_to_Par(KVAL_ACC[i]);
+          cSPIN_RegsStructArray[i].KVAL_DEC 	= Kval_Perc_to_Par(KVAL_DEC[i]);		
+          cSPIN_RegsStructArray[i].KVAL_RUN 	= Kval_Perc_to_Par(KVAL_RUN[i]);
+          cSPIN_RegsStructArray[i].KVAL_HOLD 	= Kval_Perc_to_Par(KVAL_HOLD[i]);
+          cSPIN_RegsStructArray[i].K_THERM 	= KTherm_to_Par(K_THERM[i]);
+          cSPIN_RegsStructArray[i].INT_SPD 	= IntSpd_Steps_to_Par(INT_SPD[i]);
+          cSPIN_RegsStructArray[i].ST_SLP 	= BEMF_Slope_Perc_to_Par(ST_SLP[i]);
+          cSPIN_RegsStructArray[i].FN_SLP_ACC   = BEMF_Slope_Perc_to_Par(FN_SLP_ACC[i]);
+          cSPIN_RegsStructArray[i].FN_SLP_DEC   = BEMF_Slope_Perc_to_Par(FN_SLP_DEC[i]);
+          cSPIN_RegsStructArray[i].STALL_TH 	= StallTh_to_Par(STALL_TH[i]);
+          cSPIN_RegsStructArray[i].CONFIG 	= (uint16_t)CONFIG_CLOCK_SETTING[i] |
+                                                  (uint16_t)CONFIG_SW_MODE[i] | \
+                                                  (uint16_t)CONFIG_VS_COMP[i] | \
+                                                  (uint16_t)CONFIG_OC_SD[i]   | \
+                                                  (uint16_t)CONFIG_UVLOVAL[i] | \
+                                                  (uint16_t)CONFIG_VCCVAL[i]  | \
+                                                  (uint16_t)CONFIG_PWM_DIV[i] | \
+                                                  (uint16_t)CONFIG_PWM_MUL[i];
 
+          cSPIN_RegsStructArray[i].OCD_TH 	= OCD_TH[i];
+          cSPIN_RegsStructArray[i].ALARM_EN 	= ALARM_EN[i];
+          cSPIN_RegsStructArray[i].STEP_MODE 	= (uint8_t)SYNC_MODE[i] | (uint8_t)STEP_MODE[i];
+          cSPIN_RegsStructArray[i].GATECFG1     = (uint16_t)GATECFG1_WD_EN[i]  | \
+                                                  (uint16_t)GATECFG1_TBOOST[i] | \
+                                                  (uint16_t)GATECFG1_IGATE[i]  | \
+                                                  (uint16_t)GATECFG1_TCC[i];
+          cSPIN_RegsStructArray[i].GATECFG2     = (uint16_t)GATECFG2_TBLANK[i] | \
+                                                  (uint16_t)GATECFG2_TDT[i];
+        }
+
+        /* Program all cSPIN registers of All Devices */
+        cSPIN_All_Slaves_Registers_Set(number_of_slaves, &cSPIN_RegsStructArray[0]);
+  
+        /* Get status of all devices, clear FLAG pin */
+        cSPIN_All_Slaves_Get_Status(number_of_slaves, responseArray);
+#endif
     //
     // Loop forever echoing data through the UART.
     //

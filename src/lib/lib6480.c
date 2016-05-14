@@ -13,6 +13,10 @@
 #include "cspin.h"
 #include "l6480.h"
 int flag,busy;
+uint8_t spiTxBursts[cSPIN_CMD_ARG_MAX_NB_BYTES][NUMBER_OF_SLAVES];
+uint8_t spiRxBursts[cSPIN_CMD_ARG_MAX_NB_BYTES][NUMBER_OF_SLAVES];
+uint8_t arrayTxBytes[NUMBER_OF_SLAVES];
+uint32_t arrayValues[NUMBER_OF_SLAVES];
 extern void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count);
 void
 Delay(uint32_t ui32Seconds)
@@ -172,14 +176,14 @@ void cSPIN_Peripherals_Init(void)
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 	GPIOPinConfigure(GPIO_PA2_SSI0CLK);
-	GPIOPinConfigure(GPIO_PA3_SSI0FSS);
+	//GPIOPinConfigure(GPIO_PA3_SSI0FSS);
 	GPIOPinConfigure(GPIO_PA4_SSI0RX);
 	GPIOPinConfigure(GPIO_PA5_SSI0TX);
 	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_1);
-	//GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, GPIO_PIN_3);
+	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, GPIO_PIN_3);
 	GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_1, GPIO_PIN_1);
-	//GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
-	GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_5 | GPIO_PIN_4 | GPIO_PIN_3|
+	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
+	GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_5 | GPIO_PIN_4 |
 					   GPIO_PIN_2);
 	SSIConfigSetExpClk(SSI0_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_3,
 						   SSI_MODE_MASTER, 1000000, 8);
@@ -772,7 +776,6 @@ uint8_t cSPIN_Write_Byte(uint8_t byte)
 
 	return (result&0xff);
 }
-#if 0
 /**
   * @brief  Transmits/Receives several bytes to cSPIN over SPI
   * @param  pTxByte pTxBytePointer to TX bytes
@@ -783,20 +786,27 @@ uint8_t cSPIN_Write_Byte(uint8_t byte)
 void cSPIN_Write_Daisy_Chain_Bytes(uint8_t *pTxByte, uint8_t *pRxByte, uint8_t nBytes)
 {
         uint32_t index;
+		uint32_t result=0;
 	/* nSS signal activation - low */
-	GPIO_ResetBits(cSPIN_nSS_Port, cSPIN_nSS_Pin);
+	//GPIO_ResetBits(cSPIN_nSS_Port, cSPIN_nSS_Pin);
+	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, 0);
 	/* SPI byte send */
         for (index = 0; index < nBytes; index++)
         {
-          SPI_I2S_SendData(cSPIN_SPI, *pTxByte);
+          //SPI_I2S_SendData(cSPIN_SPI, *pTxByte);
+		  SSIDataPut(SSI0_BASE, *pTxByte);
           /* Wait for SPIx Busy flag */
-	  while (SPI_I2S_GetFlagStatus(cSPIN_SPI, SPI_I2S_FLAG_BSY) != RESET);
-          *pRxByte = SPI_I2S_ReceiveData(cSPIN_SPI);
+	  //while (SPI_I2S_GetFlagStatus(cSPIN_SPI, SPI_I2S_FLAG_BSY) != RESET);
+          //*pRxByte = SPI_I2S_ReceiveData(cSPIN_SPI);
+          while(SSIBusy(SSI0_BASE));
+			SSIDataGet(SSI0_BASE, &result);
+			*pRxByte=(uint8_t)result;
           pTxByte++;
           pRxByte++;
         }
 	/* nSS signal deactivation - high */
-	GPIO_SetBits(cSPIN_nSS_Port, cSPIN_nSS_Pin);
+	//GPIO_SetBits(cSPIN_nSS_Port, cSPIN_nSS_Pin);
+	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
 }
 /**
   * @brief  Issues cSPIN Set Param command to each device (slave).
@@ -995,7 +1005,6 @@ void cSPIN_All_Slaves_Registers_Set(uint8_t slaves_number, cSPIN_RegsStruct_Type
       arrayValues[i] = cSPIN_RegsStructArray[i].FS_SPD;
     }
     cSPIN_All_Slaves_Set_Param(slaves_number, arrayTxBytes, arrayValues); 
-#if defined(L6480)
     /* KVAL_HOLD */
     for (i=0;i<slaves_number;i++)
     {
@@ -1066,58 +1075,7 @@ void cSPIN_All_Slaves_Registers_Set(uint8_t slaves_number, cSPIN_RegsStruct_Type
       arrayValues[i] = cSPIN_RegsStructArray[i].STALL_TH;
     }
     cSPIN_All_Slaves_Set_Param(slaves_number, arrayTxBytes, arrayValues);
-#endif /* defined(L6480) */
-#if defined(L6482)
-    /* TVAL_HOLD */
-    for (i=0;i<slaves_number;i++)
-    {
-      arrayTxBytes[i] = cSPIN_TVAL_HOLD;
-      arrayValues[i] = cSPIN_RegsStructArray[i].TVAL_HOLD;
-    }
-    cSPIN_All_Slaves_Set_Param(slaves_number, arrayTxBytes, arrayValues);
-    /* TVAL_RUN */
-    for (i=0;i<slaves_number;i++)
-    {
-      arrayTxBytes[i] = cSPIN_TVAL_RUN;
-      arrayValues[i] = cSPIN_RegsStructArray[i].TVAL_RUN;
-    }
-    cSPIN_All_Slaves_Set_Param(slaves_number, arrayTxBytes, arrayValues);
-    /* TVAL_ACC */
-    for (i=0;i<slaves_number;i++)
-    {
-      arrayTxBytes[i] = cSPIN_TVAL_ACC;
-      arrayValues[i] = cSPIN_RegsStructArray[i].TVAL_ACC;
-    }
-    cSPIN_All_Slaves_Set_Param(slaves_number, arrayTxBytes, arrayValues); 
-    /* TVAL_DEC */
-    for (i=0;i<slaves_number;i++)
-    {
-      arrayTxBytes[i] = cSPIN_TVAL_DEC;
-      arrayValues[i] = cSPIN_RegsStructArray[i].TVAL_DEC;
-    }
-    cSPIN_All_Slaves_Set_Param(slaves_number, arrayTxBytes, arrayValues);
-    /* T_FAST */
-    for (i=0;i<slaves_number;i++)
-    {
-      arrayTxBytes[i] = cSPIN_T_FAST;
-      arrayValues[i] = cSPIN_RegsStructArray[i].T_FAST;
-    }
-    cSPIN_All_Slaves_Set_Param(slaves_number, arrayTxBytes, arrayValues);
-    /* TON_MIN */
-    for (i=0;i<slaves_number;i++)
-    {
-      arrayTxBytes[i] = cSPIN_TON_MIN;
-      arrayValues[i] = cSPIN_RegsStructArray[i].TON_MIN;
-    }
-    cSPIN_All_Slaves_Set_Param(slaves_number, arrayTxBytes, arrayValues);
-    /* TOFF_MIN */
-    for (i=0;i<slaves_number;i++)
-    {
-      arrayTxBytes[i] = cSPIN_TOFF_MIN;
-      arrayValues[i] = cSPIN_RegsStructArray[i].TOFF_MIN;
-    }
-    cSPIN_All_Slaves_Set_Param(slaves_number, arrayTxBytes, arrayValues);
-#endif /* defined(L6482) */
+
     /* OCD_TH */
      for (i=0;i<slaves_number;i++)
     {
@@ -1304,7 +1262,7 @@ void cSPIN_All_Slaves_Get_Status(uint8_t slaves_number, uint32_t *pValue)
 uint8_t cSPIN_One_Or_More_Slaves_Busy_SW(uint8_t slaves_number)
 {
   uint32_t i;
-  uint16_t status;
+  uint16_t status=0;
   cSPIN_All_Slaves_Get_Status(slaves_number, arrayValues);
   for (i = 0; i < slaves_number; i++)
   {
@@ -1313,4 +1271,3 @@ uint8_t cSPIN_One_Or_More_Slaves_Busy_SW(uint8_t slaves_number)
   if(!(status & cSPIN_STATUS_BUSY)) return 0x01;
   else return 0x00;
 }
-#endif

@@ -67,5 +67,14 @@ extern int CMD_busySW (int argc, char **argv);
 extern int CMD_flagHW (int argc, char **argv);
 extern int CMD_auto (int argc, char **argv);
 extern void auto_test(void);
+extern void auto_mtest(void);
 extern int CMD_pwm(int argc, char **argv);
+extern int CMD_MsParam(int argc, char **argv);
+extern int CMD_Mauto(int argc, char **argv);
+extern int CMD_MbusySW(int argc, char **argv);
+extern int CMD_MCmd(int argc, char **argv);
+extern int CMD_MRun(int argc, char **argv);
+extern int CMD_MMove(int argc, char **argv);
+extern int CMD_MgParam(int argc, char **argv);
+extern int CMD_MgetStatus(int argc, char **argv);
 #endif //__RGB_COMMANDS_H__

@@ -571,7 +571,16 @@ uint8_t cSPIN_Busy_HW(void);
 uint8_t cSPIN_Busy_SW(void);
 uint8_t cSPIN_Flag(void);
 uint8_t cSPIN_Write_Byte(uint8_t byte);
-
+void cSPIN_Write_Daisy_Chain_Bytes(uint8_t *pTxByte, uint8_t *pRxByte, uint8_t nBytes);
+void cSPIN_All_Slaves_Registers_Set(uint8_t slaves_number, cSPIN_RegsStruct_TypeDef *cSPIN_RegsStructArray);
+void cSPIN_All_Slaves_Set_Param(uint8_t slaves_number, uint8_t *pParam, uint32_t *pValue);
+void cSPIN_All_Slaves_Get_Param(uint8_t slaves_number, uint8_t *pParam, uint32_t *pValue);
+void cSPIN_One_Slave_Move(uint8_t slaveNumber, uint8_t slaves_number, cSPIN_Direction_TypeDef direction, uint32_t n_step);
+void cSPIN_One_Slave_Run(uint8_t slaveNumber, uint8_t slaves_number, cSPIN_Direction_TypeDef direction, uint32_t speed);
+void cSPIN_One_Slave_Send_Command(uint8_t slaveNumber, uint8_t slaves_number, uint8_t param, uint32_t value);
+void cSPIN_All_Slaves_Send_Command(uint8_t slaves_number, uint8_t *pParam, uint32_t *pValue);
+void cSPIN_All_Slaves_Get_Status(uint8_t slaves_number, uint32_t *pValue);
+uint8_t cSPIN_One_Or_More_Slaves_Busy_SW(uint8_t slaves_number);
 /** @} */  
 
 #endif /* __CSPIN_H */

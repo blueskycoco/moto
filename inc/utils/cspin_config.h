@@ -23,8 +23,6 @@
 #ifndef __CSPIN_CONFIG_H
 #define __CSPIN_CONFIG_H
 
-/* Includes ------------------------------------------------------------------*/
-#define NUMBER_OF_SLAVES         (1)
 
 /* Exported constants --------------------------------------------------------*/
 
@@ -32,7 +30,56 @@
   /****************************************************************************/
   /***** #define cSPIN_CONF_PARAM_XXX (DEVICE_N, DEVICE_N-1, ..., DEVICE_1) ***/
   /****************************************************************************/
+#define L6480 (1)
 
+  /****************************************************************************/
+  /******************Daisy Chain Mode *****************************************/
+  /****************************************************************************/
+
+/* Exported constants --------------------------------------------------------*/
+
+  /**************************** Slaves numbering ******************************/
+        /* Number of dPIN slaves */
+        #define NUMBER_OF_SLAVES         (4)
+        /* Devices */
+        /* The first device of the chain receives the last byte transmitted by the master */
+        /* The last device of the chain receives the first byte transmitted by the master */
+        #define DEVICE_1                 (NUMBER_OF_SLAVES-1)
+#if (DEVICE_1>0)
+        #define DEVICE_2                 (NUMBER_OF_SLAVES-2)
+#else
+        #define DEVICE_2                 (DEVICE_1)
+#endif
+#if (DEVICE_2>0)
+        #define DEVICE_3                 (NUMBER_OF_SLAVES-3)
+#else
+        #define DEVICE_3                 (DEVICE_2)
+#endif
+#if (DEVICE_3>0)
+        #define DEVICE_4                 (NUMBER_OF_SLAVES-4)
+#else
+        #define DEVICE_4                 (DEVICE_3)
+#endif
+#if (DEVICE_4>0)
+        #define DEVICE_5                 (NUMBER_OF_SLAVES-5)
+#else
+        #define DEVICE_5                 (DEVICE_4)
+#endif
+#if (DEVICE_5>0)
+        #define DEVICE_6                 (NUMBER_OF_SLAVES-6)
+#else
+        #define DEVICE_6                 (DEVICE_5)
+#endif
+#if (DEVICE_6>0)
+        #define DEVICE_7                 (NUMBER_OF_SLAVES-7)
+#else
+        #define DEVICE_7                 (DEVICE_6)
+#endif
+#if (DEVICE_7>0)
+        #define DEVICE_8                 (NUMBER_OF_SLAVES-8)
+#else
+        #define DEVICE_8                 (DEVICE_7)
+#endif
 
   /**************************** Speed Profile *********************************/
 	/* Register : ACC */
