@@ -197,7 +197,7 @@ CMD_MMove(int argc, char **argv)
 		ui32No 	  =	ustrtoul(argv[1], 0, 10);
 		ui32Dir   = ustrtoul(argv[2], 0, 10);
 		ui32Step  = ustrtoul(argv[3], 0, 10);
-		cSPIN_One_Slave_Move(ui32No,NUMBER_OF_SLAVES,ui32Dir,ui32Step);
+		cSPIN_One_Slave_Move(NUMBER_OF_SLAVES,ui32No,ui32Dir,ui32Step);
 	}
 	
     return (0);
