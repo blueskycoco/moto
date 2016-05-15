@@ -768,11 +768,11 @@ uint8_t cSPIN_Flag(void)
 uint8_t cSPIN_Write_Byte(uint8_t byte)
 {
 	uint32_t result=0;
-	//GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, 0);
+	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, 0);
 	SSIDataPut(SSI0_BASE, byte);
 	while(SSIBusy(SSI0_BASE));
 	SSIDataGet(SSI0_BASE, &result);
-	//GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
+	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
 
 	return (result&0xff);
 }

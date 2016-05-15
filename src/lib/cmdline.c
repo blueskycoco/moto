@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <strings.h>
 #include "utils/cmdline.h"
 
 //*****************************************************************************
@@ -166,7 +167,7 @@ CmdLineProcess(char *pcCmdLine)
             // the function for this command, passing the command line
             // arguments.
             //
-            if(!strcmp(g_ppcArgv[0], psCmdEntry->pcCmd))
+            if(!strcasecmp(g_ppcArgv[0], psCmdEntry->pcCmd))
             {
                 return(psCmdEntry->pfnCmd(ui8Argc, g_ppcArgv));
             }
