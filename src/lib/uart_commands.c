@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <strings.h>
 #include "cspin.h"
 #include "inc/hw_types.h"
 #include "utils/ustdlib.h"
@@ -123,12 +124,59 @@ CMD_MgetStatus(int argc, char **argv)
 	UARTprintf("Dev 3 Status = %2X\n",responseArray[3]);
     return (0);
 }
+int cmdToint(char *cmd)
+{
+	int result;
+	if(!strcasecmp(cmd,"move"))
+		result = cSPIN_MOVE;
+	else if(!strcasecmp(cmd,"run"))
+		result = cSPIN_RUN;
+	else if(!strcasecmp(cmd,"goto"))
+		result = cSPIN_GO_TO;
+	else if(!strcasecmp(cmd,"sclock"))
+		result = cSPIN_STEP_CLOCK;
+	else if(!strcasecmp(cmd,"gotodir"))
+		result = cSPIN_GO_TO_DIR;
+	else if(!strcasecmp(cmd,"gountile"))
+		result = cSPIN_GO_UNTIL;
+	else if(!strcasecmp(cmd,"releasesw"))
+		result = cSPIN_RELEASE_SW;
+	else if(!strcasecmp(cmd,"gohome"))
+		result = cSPIN_GO_HOME;
+	else if(!strcasecmp(cmd,"gomark"))
+		result = cSPIN_GO_MARK;
+	else if(!strcasecmp(cmd,"resetpos"))
+		result = cSPIN_RESET_POS;
+	else if(!strcasecmp(cmd,"resetdevice"))
+		result = cSPIN_RESET_DEVICE;
+	else if(!strcasecmp(cmd,"softstop"))
+		result = cSPIN_SOFT_STOP;
+	else if(!strcasecmp(cmd,"hardstop"))
+		result = cSPIN_HARD_STOP;
+	else if(!strcasecmp(cmd,"softhiz"))
+		result = cSPIN_SOFT_HIZ;
+	else if(!strcasecmp(cmd,"hardhiz"))
+		result = cSPIN_HARD_HIZ;
+	else if(!strcasecmp(cmd,"fwd"))
+		result = FWD;
+	else if(!strcasecmp(cmd,"rev"))
+		result = REV;
+	else if(!strcasecmp(cmd,"reset"))
+		result = ACTION_RESET;
+	else if(!strcasecmp(cmd,"copy"))
+		result = ACTION_COPY;
+	else 
+		result = cSPIN_NOP;
+	//UARTprintf("result is 0x%2x\n",result);
+	return result;
+}
 int
 CMD_MCmd(int argc, char **argv)
 {
 	uint32_t ui32No;
 	uint32_t ui32Param;
-	uint32_t ui32Value;
+	uint32_t ui32Param1;
+	uint32_t ui32Value=cSPIN_NOP;
 	int i;
     //
     // Keep the compiler happy.
@@ -138,16 +186,32 @@ CMD_MCmd(int argc, char **argv)
 	if(argc >= 3)
 	{
 		ui32No 	  =	ustrtoul(argv[1], 0, 10);
-		ui32Param = ustrtoul(argv[2], 0, 10);
-		if(argc==4)
-		ui32Value = ustrtoul(argv[3], 0, 10);
+		ui32Param1 = cmdToint(argv[2]);
+		//UARTprintf("ui32Param1 0x%2x\n",ui32Param1);
+		switch ((ui32Param1) & DAISY_CHAIN_COMMAND_MASK)
+     	{
+	        case cSPIN_RUN: ;
+	        case cSPIN_MOVE: ;
+	        case cSPIN_GO_TO: ;
+	        case cSPIN_GO_TO_DIR: ;
+	        case cSPIN_GO_UNTIL: ;
+	        case cSPIN_GO_UNTIL_ACT_CPY:
+				ui32Param=ui32Param1|cmdToint(argv[3]);
+				ui32Value = ustrtoul(argv[4], 0, 10);
+				break;
+			default:
+      			ui32Param=ui32Param1;
+				if(((ui32Param1) & DAISY_CHAIN_COMMAND_MASK)==cSPIN_RELEASE_SW && argc==5)
+					ui32Param|=(cmdToint(argv[3])|cmdToint(argv[4]));
+				break;
+     	}
 		for (i = 0; i < NUMBER_OF_SLAVES; i++)
 		  {
 		    if (i == ui32No)
 		    {
 		      commandArray[i] = (uint8_t)ui32Param;
-			  if(argc==4)
-		      	argumentArray[i] = ui32Value;
+	      	  argumentArray[i] = ui32Value;
+			  UARTprintf("cmd 0x%2X,value %d\n",ui32Param,ui32Value);
 		    }
 		    else
 		    {
