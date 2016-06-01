@@ -327,7 +327,7 @@ CMD_MgParam(int argc, char **argv)
 		      commandArray[i] = cSPIN_NOP;
 		    }
 		  }
-		cSPIN_All_Slaves_Set_Param(NUMBER_OF_SLAVES,arrayTxBytes,responseArray);
+		cSPIN_All_Slaves_Set_Param(NUMBER_OF_SLAVES,commandArray,responseArray);
 		UARTprintf("Dev %d Reg %2X = %2X\n",ui32No,ui32Param,responseArray[ui32No]);
 	}
 	

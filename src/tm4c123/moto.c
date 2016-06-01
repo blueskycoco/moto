@@ -189,7 +189,38 @@ UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count)
         ROM_UARTCharPutNonBlocking(UART0_BASE, *pui8Buffer++);
     }
 }
+
 void auto_mtest(void)
+{
+	int i;
+	/* Initialization of command array with NOP instruction */
+	for (i=0;i<number_of_slaves;i++)
+	{
+		commandArray[i] = cSPIN_NOP; 
+		argumentArray[i] = cSPIN_NOP;
+	}
+	UARTprintf("DEVICE 2 goto 0x0000ffff\n");
+	commandArray[DEVICE_2] = cSPIN_GO_TO;
+	argumentArray[DEVICE_2] = 0x0000FFFF;
+	cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, argumentArray);
+	/* Wait until not busy - busy pin test */
+	cSPIN_Delay(0x00FFFFFF);
+	UARTprintf("DEVICE 2 go until copy fwd 800\n");
+	commandArray[DEVICE_2] = (uint8_t)cSPIN_GO_UNTIL | (uint8_t)ACTION_COPY | (uint8_t)FWD;
+	argumentArray[DEVICE_2] = Speed_Steps_to_Par(800);
+	cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, argumentArray);
+	cSPIN_Delay(0x00FFFFFF);
+	UARTprintf("DEVICE 2 go home\n");
+	commandArray[DEVICE_2] = (uint8_t) cSPIN_GO_HOME;
+	cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, 0);
+	cSPIN_Delay(0x00FFFFFF);
+	UARTprintf("DEVICE 2 go to dir fwd, 0x001ffff\n");
+	commandArray[DEVICE_2] = (uint8_t)cSPIN_GO_TO_DIR | (uint8_t)FWD;
+	argumentArray[DEVICE_2] = 0x0001FFFF;
+	cSPIN_All_Slaves_Send_Command(number_of_slaves, commandArray, argumentArray);
+	cSPIN_Delay(0x00FFFFFF);
+}
+void auto1_mtest(void)
 {
 	int i;
 	/* Initialization of command array with NOP instruction */
