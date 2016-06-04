@@ -89,6 +89,9 @@ ${COMPILER}/moto.axf: ${COMPILER}/cmdline.o
 ${COMPILER}/moto.axf: ${COMPILER}/uart_commands.o
 ${COMPILER}/moto.axf: ${COMPILER}/ustdlib.o
 ${COMPILER}/moto.axf: ${COMPILER}/interrupt.o
+${COMPILER}/moto.axf: ${COMPILER}/hal.o
+${COMPILER}/moto.axf: ${COMPILER}/softssi.o
+${COMPILER}/moto.axf: ${COMPILER}/systick.o
 ${COMPILER}/moto.axf: moto.ld
 SCATTERgcc_moto=moto.ld
 ENTRY_moto=ResetISR
