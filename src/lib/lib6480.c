@@ -787,25 +787,19 @@ void cSPIN_Write_Daisy_Chain_Bytes(uint8_t *pTxByte, uint8_t *pRxByte, uint8_t n
 {
 	uint32_t index;
 	uint32_t result=0;
-	/* nSS signal activation - low */
-	//GPIO_ResetBits(cSPIN_nSS_Port, cSPIN_nSS_Pin);
 	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, 0);
-	/* SPI byte send */
 	for (index = 0; index < nBytes; index++)
 	{
-		//SPI_I2S_SendData(cSPIN_SPI, *pTxByte);
 		SSIDataPut(SSI0_BASE, *pTxByte);
-		/* Wait for SPIx Busy flag */
-		//while (SPI_I2S_GetFlagStatus(cSPIN_SPI, SPI_I2S_FLAG_BSY) != RESET);
-		//*pRxByte = SPI_I2S_ReceiveData(cSPIN_SPI);
-		while(SSIBusy(SSI0_BASE));
+		pTxByte++;
+	}
+	for (index = 0; index < nBytes; index++)
+	{	
 		SSIDataGet(SSI0_BASE, &result);
 		*pRxByte=(uint8_t)result;
-		pTxByte++;
 		pRxByte++;
-	}
-	/* nSS signal deactivation - high */
-	//GPIO_SetBits(cSPIN_nSS_Port, cSPIN_nSS_Pin);
+	}	
+	while(SSIBusy(SSI0_BASE));
 	GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
 }
 /**
