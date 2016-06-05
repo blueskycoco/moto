@@ -17,6 +17,9 @@ uint8_t spiTxBursts[cSPIN_CMD_ARG_MAX_NB_BYTES][NUMBER_OF_SLAVES];
 uint8_t spiRxBursts[cSPIN_CMD_ARG_MAX_NB_BYTES][NUMBER_OF_SLAVES];
 uint8_t arrayTxBytes[NUMBER_OF_SLAVES];
 uint32_t arrayValues[NUMBER_OF_SLAVES];
+#ifdef PART_TM4C1294NCPDT
+uint32_t g_ui32SysClock;
+#endif
 extern void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count);
 void
 Delay(uint32_t ui32Seconds)
@@ -43,7 +46,11 @@ Delay(uint32_t ui32Seconds)
 }
 void InitDelay()
 {
+	#ifdef PART_TM4C1294NCPDT
+	ROM_SysTickPeriodSet(g_ui32SysClock);
+	#else
 	ROM_SysTickPeriodSet(ROM_SysCtlClockGet());
+	#endif
     ROM_SysTickEnable();
 }
 void
@@ -113,9 +120,15 @@ initUart(void)
     //
     // Set the clocking to run directly from the crystal.
     //
-    ROM_SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
+    #ifdef PART_TM4C1294NCPDT
+    g_ui32SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ |
+                                             SYSCTL_OSC_MAIN |
+                                             SYSCTL_USE_PLL |
+                                             SYSCTL_CFG_VCO_480), 120000000);
+	#else
+	ROM_SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
                        SYSCTL_XTAL_16MHZ);
-
+	#endif
     //
     // Enable the GPIO port that is used for the on-board LED.
     //
@@ -147,10 +160,15 @@ initUart(void)
     //
     // Configure the UART for 115,200, 8-N-1 operation.
     //
-    ROM_UARTConfigSetExpClk(UART0_BASE, ROM_SysCtlClockGet(), 115200,
+    #ifdef PART_TM4C1294NCPDT
+    ROM_UARTConfigSetExpClk(UART0_BASE, g_ui32SysClock, 115200,
                             (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
                              UART_CONFIG_PAR_NONE));
-
+	#else
+	ROM_UARTConfigSetExpClk(UART0_BASE, ROM_SysCtlClockGet(), 115200,
+							(UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
+                             UART_CONFIG_PAR_NONE));
+	#endif
     //
     // Enable the UART interrupt.
     //
@@ -174,11 +192,20 @@ void cSPIN_Peripherals_Init(void)
 	uint32_t tmp;
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+	#ifdef PART_TM4C1294NCPDT	
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+	#else
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+	#endif
 	GPIOPinConfigure(GPIO_PA2_SSI0CLK);
 	//GPIOPinConfigure(GPIO_PA3_SSI0FSS);
+	#ifdef PART_TM4C1294NCPDT	
+	GPIOPinConfigure(GPIO_PA4_SSI0XDAT0);
+	GPIOPinConfigure(GPIO_PA5_SSI0XDAT1);
+	#else
 	GPIOPinConfigure(GPIO_PA4_SSI0RX);
-	GPIOPinConfigure(GPIO_PA5_SSI0TX);
+    GPIOPinConfigure(GPIO_PA5_SSI0TX);
+	#endif
 	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_1);
 	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, GPIO_PIN_3);
 	GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_1, GPIO_PIN_1);
@@ -214,8 +241,13 @@ void cSPIN_Peripherals_Init(void)
 	//config pwm
 	SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
+	#ifdef PART_TM4C1294NCPDT	
+	GPIOPinConfigure(GPIO_PF0_M0PWM0);
+	GPIOPinTypePWM(GPIO_PORTF_BASE, GPIO_PIN_0);
+	#else
 	GPIOPinConfigure(GPIO_PB6_M0PWM0);
-	GPIOPinTypePWM(GPIO_PORTB_BASE, GPIO_PIN_6);
+    GPIOPinTypePWM(GPIO_PORTB_BASE, GPIO_PIN_6);
+	#endif
 	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN |
                     PWM_GEN_MODE_NO_SYNC);
 }

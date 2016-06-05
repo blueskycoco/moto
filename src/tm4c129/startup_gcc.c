@@ -2,7 +2,7 @@
 //
 // startup_gcc.c - Startup code for use with GNU tools.
 //
-// Copyright (c) 2013-2015 Texas Instruments Incorporated.  All rights reserved.
+// Copyright (c) 2012-2015 Texas Instruments Incorporated.  All rights reserved.
 // Software License Agreement
 // 
 // Texas Instruments (TI) is supplying this software for use solely and
@@ -18,7 +18,7 @@
 // CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
 // DAMAGES, FOR ANY REASON WHATSOEVER.
 // 
-// This is part of revision 2.1.2.111 of the EK-TM4C1294XL Firmware Package.
+// This is part of revision 2.1.2.111 of the EK-TM4C123GXL Firmware Package.
 //
 //*****************************************************************************
 
@@ -42,7 +42,8 @@ static void IntDefaultHandler(void);
 //
 //*****************************************************************************
 extern void UARTIntHandler(void);
-
+extern void UARTStdioIntHandler(void);
+extern void IntGPIOa(void);
 //*****************************************************************************
 //
 // The entry point for the application.
@@ -55,7 +56,7 @@ extern int main(void);
 // Reserve space for the system stack.
 //
 //*****************************************************************************
-static uint32_t pui32Stack[64];
+static uint32_t pui32Stack[2048];
 
 //*****************************************************************************
 //
@@ -83,12 +84,12 @@ void (* const g_pfnVectors[])(void) =
     0,                                      // Reserved
     IntDefaultHandler,                      // The PendSV handler
     IntDefaultHandler,                      // The SysTick handler
-    IntDefaultHandler,                      // GPIO Port A
-    IntDefaultHandler,                      // GPIO Port B
+    IntGPIOa,                      			// GPIO Port A
+    IntDefaultHandler,             			// GPIO Port B
     IntDefaultHandler,                      // GPIO Port C
     IntDefaultHandler,                      // GPIO Port D
     IntDefaultHandler,                      // GPIO Port E
-    UARTIntHandler,                         // UART0 Rx and Tx
+    UARTStdioIntHandler,                         // UART0 Rx and Tx
     IntDefaultHandler,                      // UART1 Rx and Tx
     IntDefaultHandler,                      // SSI0 Rx and Tx
     IntDefaultHandler,                      // I2C0 Master and Slave

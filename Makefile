@@ -92,7 +92,7 @@ ${COMPILER}/moto.axf: ${COMPILER}/interrupt.o
 ${COMPILER}/moto.axf: moto.ld
 SCATTERgcc_moto=moto.ld
 ENTRY_moto=ResetISR
-#CFLAGSgcc=-DTARGET_IS_TM4C129_RA0
+#CFLAGSgcc=-DTARGET_IS_TM4C129_RA0 -DUART_BUFFERED
 CFLAGSgcc=-DTARGET_IS_TM4C123_RA1 -DUART_BUFFERED
 #
 # Include the automatically generated dependency files.
