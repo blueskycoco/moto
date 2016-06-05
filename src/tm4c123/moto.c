@@ -574,7 +574,7 @@ main(void)
 	UARTprintf("Welcome to the Tiva C Series TM4C123G LaunchPad!\n");
 	UARTprintf("Type 'help' for a list of commands to control Moto\n");
 	UARTprintf("> ");
-	InitDelay();
+	//InitDelay();
 	cSPIN_Peripherals_Init();
 	cSPIN_Reset_And_Standby();
 	/* Structure initialization by default values, in order to avoid blank records */

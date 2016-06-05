@@ -261,18 +261,6 @@ void cSPIN_Delay(volatile uint32_t nCount)
 {
   for(; nCount!= 0;nCount--);
 }
-
-/**
-  * @brief  Resets CSPIN and puts it into standby mode
-  * @param  None
-  * @retval None
-  */
-void cSPIN_Reset_And_Standby(void)
-{
-  GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_1, 0);
-  cSPIN_Delay(10000);
-  GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_1, GPIO_PIN_1);
-}
 /**
   * @brief  Toggles a GPIO output
   * @param  GPIOx gpio port
@@ -289,31 +277,6 @@ void cSPIN_Gpio_Toggle(uint32_t GPIOx, uint16_t GPIO_Pin)
   {
     GPIOPinWrite(GPIOx, GPIO_Pin,GPIO_Pin);
   }
-}
-/**
-  * @brief  Enable a PWM on the STCK pin from STM32 
-  * @param  Period to be set (PWM Freq = 1MHZ/Period)
-  * @retval None
-  */
-void cSPIN_PWM_Enable(uint16_t Period)
-{
-	uint32_t param=SysCtlClockGet()/Period;
-	//UARTprintf("PWM set to %d\n",param);
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, param);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0,
-         PWMGenPeriodGet(PWM0_BASE, PWM_GEN_0) / 2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_0_BIT, true);
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-}
-/**
-  * @brief  Disable PWM on the STCK pin from STM32 
-  * @param  None
-  * @retval None
-  */
-void cSPIN_PWM_DISABLE(void)
-{
-	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_0_BIT, false);
 }
 /**
   * @brief  Fills-in cSPIN configuration structure with default values.
