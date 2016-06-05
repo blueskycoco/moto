@@ -192,10 +192,9 @@ void cSPIN_Peripherals_Init(void)
 	uint32_t tmp;
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 	#ifdef PART_TM4C1294NCPDT	
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-	#else
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 	#endif
 	GPIOPinConfigure(GPIO_PA2_SSI0CLK);
 	//GPIOPinConfigure(GPIO_PA3_SSI0FSS);
@@ -250,6 +249,32 @@ void cSPIN_Peripherals_Init(void)
 	#endif
 	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN |
                     PWM_GEN_MODE_NO_SYNC);
+}
+void cSPIN_PWM_Enable(uint16_t Period)
+{
+	uint32_t param=SysCtlClockGet()/Period;
+	//UARTprintf("PWM set to %d\n",param);
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, param);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0,
+         PWMGenPeriodGet(PWM0_BASE, PWM_GEN_0) / 2);
+	PWMOutputState(PWM0_BASE, PWM_OUT_0_BIT, true);
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+}
+/**
+  * @brief  Disable PWM on the STCK pin from STM32 
+  * @param  None
+  * @retval None
+  */
+void cSPIN_PWM_DISABLE(void)
+{
+	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_0_BIT, false);
+}
+void cSPIN_Reset_And_Standby(void)
+{
+  GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_1, 0);
+  cSPIN_Delay(10000);
+  GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_1, GPIO_PIN_1);
 }
 
 /**

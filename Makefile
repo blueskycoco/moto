@@ -25,8 +25,8 @@
 #
 # Defines the part type that this project uses.
 #
-#PART=TM4C1294NCPDT
-PART=TM4C123GH6PM
+PART=TM4C1294NCPDT
+#PART=TM4C123GH6PM
 #
 # The base directory for TivaWare.
 #
@@ -45,8 +45,8 @@ IPATH=.
 IPATH+=./inc
 IPATH+=./inc/utils
 VPATH=./src
-VPATH+=./src/tm4c123
-#VPATH+=./src/tm4c129
+#VPATH+=./src/tm4c123
+VPATH+=./src/tm4c129
 VPATH+=./src/lib
 #
 # The default rule, which causes the moto example to be built.
@@ -89,14 +89,11 @@ ${COMPILER}/moto.axf: ${COMPILER}/cmdline.o
 ${COMPILER}/moto.axf: ${COMPILER}/uart_commands.o
 ${COMPILER}/moto.axf: ${COMPILER}/ustdlib.o
 ${COMPILER}/moto.axf: ${COMPILER}/interrupt.o
-${COMPILER}/moto.axf: ${COMPILER}/hal.o
-${COMPILER}/moto.axf: ${COMPILER}/softssi.o
-${COMPILER}/moto.axf: ${COMPILER}/systick.o
 ${COMPILER}/moto.axf: moto.ld
 SCATTERgcc_moto=moto.ld
 ENTRY_moto=ResetISR
-#CFLAGSgcc=-DTARGET_IS_TM4C129_RA0 -DUART_BUFFERED
-CFLAGSgcc=-DTARGET_IS_TM4C123_RA1 -DUART_BUFFERED
+CFLAGSgcc=-DTARGET_IS_TM4C129_RA0 -DUART_BUFFERED
+#CFLAGSgcc=-DTARGET_IS_TM4C123_RA1 -DUART_BUFFERED
 #
 # Include the automatically generated dependency files.
 #
